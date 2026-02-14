@@ -67,7 +67,7 @@ $ docker run -v "$PWD":/workdir -e VFC_BACKENDS="libinterflop_mca.so" \
 
 ## Usage
 
-To automatically instrument a program with Verificarlo you must compile it using
+To automatically instrument a program with Verificarlo you can compile it using
 the `verificarlo --linker=<linker>` command, where `<linker>` depends on the targeted language:
 
 
@@ -75,7 +75,12 @@ the `verificarlo --linker=<linker>` command, where `<linker>` depends on the tar
 * `verificarlo --linker=clang++` for C++
 * `verificarlo --linker=flang`   for Fortran
 
-Verificarlo uses the linker `clang` by default.
+When `--linker` is not specified, Verificarlo infers a default linker from the
+input sources (Fortran -> `flang`, C++ -> `clang++`, otherwise `clang`).
+
+Fortran source auto-detection supports common fixed and free-form file
+extensions, including `.f`, `.for`, `.ftn`, `.f77`, `.f90`, `.f95`, `.f03`,
+`.f08`, `.f18`, and `.fpp` (case-insensitive).
 
 You can also use the provided wrappers to call `verificarlo` with the right linker:
 
