@@ -86,7 +86,12 @@ else
    else
       with_flang_path="$with_flang"
    fi
-   AC_PATH_PROG([FLANG], [flang flang-"$LLVM_VERSION_MAJOR"], [], [$with_flang_path])
+   AC_PATH_PROGS(
+      [FLANG],
+      [flang flang-"$LLVM_VERSION_MAJOR"."$LLVM_VERSION_MINOR" flang-"$LLVM_VERSION_MAJOR" flang-new flang-new-"$LLVM_VERSION_MAJOR"."$LLVM_VERSION_MINOR" flang-new-"$LLVM_VERSION_MAJOR"],
+      [],
+      [$with_flang_path]
+   )
    if test -z "$FLANG"; then
       AC_MSG_ERROR([`flang` cannot be found in $with_flang_path])
    fi

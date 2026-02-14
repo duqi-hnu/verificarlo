@@ -47,9 +47,20 @@ clangxx = "@CLANGXX_PATH@"
 llvm_link = "@LLVM_LINK_PATH@"
 flang = "@FLANG_PATH@"
 opt = llvm_bindir + "/opt"
-FORTRAN_EXTENSIONS = [".f", ".f90", ".f77"]
+FORTRAN_EXTENSIONS = [
+    ".f",
+    ".for",
+    ".ftn",
+    ".f77",
+    ".f90",
+    ".f95",
+    ".f03",
+    ".f08",
+    ".f18",
+    ".fpp",
+]
 C_EXTENSIONS = [".c"]
-CXX_EXTENSIONS = [".cc", ".cp", ".cpp", ".cxx", "c++"]
+CXX_EXTENSIONS = [".cc", ".cp", ".cpp", ".cxx", ".c++", "c++"]
 ASSEMBLY_EXTENSIONS = [".s"]
 LLVM_BITCODE_EXTENSIONS = [".bc", ".ll"]
 COMPILE_EXTRA_FLAGS = ""
@@ -157,6 +168,17 @@ def parse_extra_args(args):
     return sources, " ".join(options), " ".join(libraries)
 
 
+def infer_linker_from_sources(sources):
+    if any(is_fortran(source) for source in sources):
+        return "flang"
+
+    # Use clang++ as default linker when C++ files are present.
+    if any(is_cpp(source) for source in sources):
+        return "clang++"
+
+    return default_linker
+
+
 def shell(cmd, verbose=False):
     try:
         if verbose:
@@ -233,10 +255,24 @@ def linker_mode(sources, options, libraries, output, args):
 
 
 # Do not instrument
-def compile_only(sources, options, output, args):
-    compiler = linkers[args.linker]
+def compile_only(sources, options, output, args, compiler_override=None):
+    compiler = compiler_override if compiler_override else linkers[args.linker]
     sources = " ".join(sources)
     shell(f"{compiler} {sources} {options} {output}", verbose=args.show_cmd)
+
+
+def get_compiler_for_source(source, args):
+    if is_fortran(source):
+        return linkers["flang"]
+
+    if is_c(source) or is_assembly(source) or is_llvm_bitcode(source):
+        return linkers["clang"]
+
+    if is_cpp(source):
+        return linkers["clang++"]
+
+    # Keep user-selected linker for assembly and LLVM bitcode.
+    return linkers[args.linker]
 
 
 def get_tmp_filename(prefix, suffix, args, force_delete=False):
@@ -324,7 +360,7 @@ def compiler_mode(sources, options, output, args):
         ir = get_tmp_filename(basename, f".1.{ir_ext}", args)
         ins = get_tmp_filename(basename, f".2.{ir_ext}", args)
 
-        compiler = linkers[args.linker]
+        compiler = get_compiler_for_source(source, args)
         include = f" -I {mcalib_includes} "
 
         debug = " -g " if args.inst_func or args.ddebug else ""
@@ -334,10 +370,16 @@ def compiler_mode(sources, options, output, args):
                 basename_output = "-o " + basename + ".o"
             else:
                 basename_output = output
-            compile_only([source], " -c " + options, basename_output, args)
+            compile_only(
+                [source],
+                " -c " + options,
+                basename_output,
+                args,
+                compiler_override=compiler,
+            )
             continue
 
-        # Compile to ir (fortran uses flang, c uses clang)
+        # Compile to IR with the frontend matching the source language.
         emit_format = get_emit_format(args)
         shell(
             f"{compiler} -c {emit_format} -emit-llvm {debug} {source} {include} {COMPILE_EXTRA_FLAGS} {options} -o {ir.name}",
@@ -447,8 +489,8 @@ def parse_args():
     parser.add_argument(
         "--linker",
         choices=linkers.keys(),
-        default=default_linker,
-        help=f"linker to use, {default_linker} by default",
+        default=None,
+        help="linker to use (default: inferred from input source files)",
     )
     parser.add_argument(
         "--emit-llvm",
@@ -486,6 +528,8 @@ def parse_args():
     args, other = parser.parse_known_args()
 
     sources, llvm_options, libraries = parse_extra_args(other)
+    if args.linker is None:
+        args.linker = infer_linker_from_sources(sources)
 
     return args, sources, llvm_options, libraries
 
