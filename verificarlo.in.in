@@ -265,7 +265,7 @@ def get_compiler_for_source(source, args):
     if is_fortran(source):
         return linkers["flang"]
 
-    if is_c(source):
+    if is_c(source) or is_assembly(source) or is_llvm_bitcode(source):
         return linkers["clang"]
 
     if is_cpp(source):
