@@ -13,16 +13,26 @@
  *  Copyright (c) 2018                                                       *\
  *     Universite de Versailles St-Quentin-en-Yvelines                       *\
  *                                                                           *\
- *  Copyright (c) 2019-2024                                                  *\
+ *  Copyright (c) 2019-2026                                                  *\
  *     Verificarlo Contributors                                              *\
  *                                                                           *\
  ****************************************************************************/
 #include <math.h>
+#include <stdint.h>
 
 #include "interflop/common/float_const.h"
 #include "interflop/common/float_struct.h"
 #include "interflop/iostream/logger.h"
 #include "vprec_tools.h"
+
+/**
+ * print the binary128 number in hexadecimal format
+ */
+void print_binary128(const binary128 b128_x) {
+  char buf[256];
+  quadmath_snprintf(buf, sizeof(buf), "%+.28Qa", b128_x.f128);
+  logger_debug("%s\n", buf);
+}
 
 /* check if we need to add .5 ulp to have the rounding to nearest with ties to
  * even */
@@ -43,7 +53,7 @@ inline static int check_if_binary32_needs_rounding(binary32 b32x,
   const uint32_t halfway_point = one << (FLOAT_PMAN_SIZE - precision - 1);
 
   // If the trailing bits are greater than the halfway point, or exactly equal
-  // to it and the bit-to-rouind is 1 (for tie-breaking), round up by adding
+  // to it and the bit-to-round is 1 (for tie-breaking), round up by adding
   // half_ulp to x.
   return (trailing_bits > halfway_point) ||
          ((trailing_bits == halfway_point) && (bit_to_round == 1));
@@ -62,7 +72,7 @@ inline float round_binary32_normal(float x, int precision) {
   /* build 1/2 ulp and add it before truncation for rounding to nearest with
    * ties to even */
 
-  /* generate a mask to erase the last 52-VPRECLIB_PREC bits, in other
+  /* generate a mask to erase the last 23-VPRECLIB_PREC bits, in other
      words, there remain VPRECLIB_PREC bits in the mantissa */
   const uint32_t mask = 0xFFFFFFFF << (FLOAT_PMAN_SIZE - precision);
 
@@ -98,7 +108,7 @@ inline static int check_if_binary64_needs_rounding(binary64 b64x,
   const uint64_t halfway_point = one << (DOUBLE_PMAN_SIZE - precision - 1);
 
   // If the trailing bits are greater than the halfway point, or exactly equal
-  // to it and the bit-to-rouind is 1 (for tie-breaking), round up by adding
+  // to it and the bit-to-round is 1 (for tie-breaking), round up by adding
   // half_ulp to x.
   return (trailing_bits > halfway_point) ||
          ((trailing_bits == halfway_point) && (bit_to_round == 1));
@@ -167,21 +177,16 @@ inline binary128 round_binary128_underflow(binary128 x, int emin,
                                            int precision) {
   binary128 b128x = x;
   binary128 half_smallest_subnormal = {
-      .ieee128 = {.sign = 0,
+      .ieee128 = {.sign = b128x.ieee128.sign,
                   .exponent = QUAD_EXP_COMP + (emin - precision) - 1,
                   .mantissa = 0}};
-
   //  If x is greater than or equal to half of the smallest subnormal number,
   //  rounds to the smallest subnormal number with the same sign.
   //  Otherwise, rounds to zero while preserving the sign.
-  //  TODO: Handle the corner case when both closest numbers are even.
-  //        In this case, we must round to the number with the largest
-  //        magnitude (see IEEE-754 2019, section 4.3.1, page 27)
-  //
   //  checks if x is greater than or equal to half of the smallest subnormal
   if (b128x.ieee128.exponent >= half_smallest_subnormal.ieee128.exponent) {
     // then round to the smallest subnormal number with the same sign
-    b128x.ieee128.exponent = half_smallest_subnormal.ieee128.exponent + 1;
+    b128x.f128 += half_smallest_subnormal.f128;
     b128x.ieee128.mantissa = 0;
   } else {
     // otherwise, round to zero while preserving the sign
@@ -204,6 +209,17 @@ inline static double round_binary_denormal(double x, int emin, int precision) {
   // Calculate the loss of precision due to the number being subnormal.
   const int32_t precision_loss =
       emin - (b128_x.ieee128.exponent - QUAD_EXP_COMP);
+
+  /*
+   * When precision_loss >= precision, the effective precision becomes <= 0, so
+   * the generic "round then truncate" path is no longer valid:
+   *   - check_if_binary128_needs_rounding() would be called with a non-positive
+   *     precision (undefined/incorrect shifts).
+   *   - the truncation mask would also require invalid shift amounts.
+   */
+  if (precision_loss >= precision) {
+    return round_binary128_underflow(b128_x, emin, precision).f128;
+  }
 
   if (check_if_binary128_needs_rounding(b128_x, precision - precision_loss)) {
     b128_x.f128 += half_ulp.f128;
@@ -244,10 +260,6 @@ inline float round_binary32_underflow(float x, int emin, int precision) {
   //  If x is greater than or equal to half of the smallest subnormal number,
   //  rounds to the smallest subnormal number with the same sign.
   //  Otherwise, rounds to zero while preserving the sign.
-  //  TODO: Handle the corner case when both closest numbers are even.
-  //        In this case, we must round to the number with the largest
-  //        magnitude (see IEEE-754 2019, section 4.3.1, page 27)
-  //
   // checks if x is greater than or equal to half of the smallest subnormal
   if (b32_x.ieee.exponent >= half_smallest_subnormal.ieee.exponent) {
     // then round to the smallest subnormal number with the same sign
@@ -293,10 +305,6 @@ inline double round_binary64_underflow(double x, int emin, int precision) {
   //  If x is greater than or equal to half of the smallest subnormal number,
   //  rounds to the smallest subnormal number with the same sign.
   //  Otherwise, rounds to zero while preserving the sign.
-  //  TODO: Handle the corner case when both closest numbers are even.
-  //        In this case, we must round to the number with the largest
-  //        magnitude (see IEEE-754 2019, section 4.3.1, page 27)
-  //
   // checks if x is greater than or equal to half of the smallest subnormal
   if (b64_x.ieee.exponent >= half_smallest_subnormal.ieee.exponent) {
     // then round to the smallest subnormal number with the same sign

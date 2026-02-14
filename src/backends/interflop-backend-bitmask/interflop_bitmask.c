@@ -13,7 +13,7 @@
  *  Copyright (c) 2018                                                       *\
  *     Universite de Versailles St-Quentin-en-Yvelines                       *\
  *                                                                           *\
- *  Copyright (c) 2019-2024                                                  *\
+ *  Copyright (c) 2019-2026                                                  *\
  *     Verificarlo Contributors                                              *\
  *                                                                           *\
  ****************************************************************************/
@@ -627,7 +627,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case KEY_FTZ:
     /* flush-to-zero */
     _set_bitmask_ftz(true, ctx);
-  https: // clang.llvm.org/extra/clang-tidy/checks/cert/dcl37-c.html
     break;
   default:
     return ARGP_ERR_UNKNOWN;
@@ -720,7 +719,8 @@ static void print_information_header(void *context) {
   logger_info("%s = %d\n", key_prec_b32_str, ctx->binary32_precision);
   logger_info("%s = %d\n", key_prec_b64_str, ctx->binary64_precision);
   logger_info("%s = %s\n", key_mode_str, BITMASK_MODE_STR[ctx->mode]);
-  logger_info("%s = %s\n", key_operator_str, BITMASK_OPERATOR_STR[ctx->operator]);
+  logger_info("%s = %s\n", key_operator_str,
+              BITMASK_OPERATOR_STR[ctx->operator]);
   logger_info("%s = %s\n", key_daz_str, ctx->daz ? "true" : "false");
   logger_info("%s = %s\n", key_ftz_str, ctx->ftz ? "true" : "false");
   logger_info("%s = %lu%s\n", key_seed_str, ctx->seed,

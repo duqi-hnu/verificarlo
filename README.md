@@ -1,18 +1,18 @@
-## Verificarlo v2.2.0
+## Verificarlo v2.3.1
 
 A tool for debugging and assessing floating point precision and reproducibility.
 
 ![verificarlo logo](https://avatars1.githubusercontent.com/u/12033642)
 
 ![GitHub Release](https://img.shields.io/github/v/release/verificarlo/verificarlo)
-![Build Status](https://github.com/verificarlo/verificarlo/workflows/test-docker/badge.svg?branch=master)
+![Build Status](https://github.com/verificarlo/verificarlo/actions/workflows/docker-ci.yml/badge.svg?branch=master)
 [![Docker Pulls](https://img.shields.io/docker/pulls/verificarlo/verificarlo)](https://hub.docker.com/r/verificarlo/verificarlo)
 [![DOI](https://zenodo.org/badge/34260221.svg)](https://zenodo.org/badge/latestdoi/34260221)
 [![Coverity](https://scan.coverity.com/projects/19956/badge.svg)](https://scan.coverity.com/projects/verificarlo-verificarlo)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://releases.llvm.org/13.0.0/LICENSE.TXT)
 
 
-- [Verificarlo v2.2.0](#verificarlo-v220)
+- [Verificarlo v2.3.1](#verificarlo-v231)
 - [Installation](#installation)
 - [Using Verificarlo through its Docker image](#using-verificarlo-through-its-docker-image)
 - [Usage](#usage)
@@ -191,7 +191,7 @@ under the Apache License v2.0 with LLVM Exceptions.
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception.             
 See https://llvm.org/LICENSE.txt for license information.            
 
-Copyright (c) 2019-2025
+Copyright (c) 2019-2026
    Verificarlo Contributors
 
 Copyright (c) 2018

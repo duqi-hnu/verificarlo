@@ -3,12 +3,11 @@ name: docker
 on:
   workflow_dispatch:
   push:
-    branches: [ '*' ]
+    branches: ["*"]
   pull_request:
-    branches: [ '*' ]
+    branches: ["*"]
   release:
-    types: [ published ]
-
+    types: [published]
 
 jobs:
   docker-flang:
@@ -83,6 +82,18 @@ jobs:
             gcc: 9
           - os: ubuntu:24.04
             llvm: 16
+            gcc: 9
+          - os: ubuntu:24.04
+            llvm: 17
+            gcc: 9
+          - os: ubuntu:24.04
+            llvm: 18
+            gcc: 9
+          - os: ubuntu:24.04
+            llvm: 19
+            gcc: 9
+          - os: ubuntu:24.04
+            llvm: 20
             gcc: 9
     runs-on: ubuntu-22.04
     env:
